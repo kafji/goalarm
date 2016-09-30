@@ -14,7 +14,8 @@ func TestIn(t *testing.T) {
 	}
 	ch := In(2*time.Second, job)
 	assert.Equal(t, "hello", <-ch)
-	assert.InDelta(t, int(2*time.Second), int(time.Now().Sub(startTime)), float64(100*time.Millisecond))
+	dur := int(time.Now().Sub(startTime))
+	assert.InDelta(t, int(2*time.Second), dur, float64(100*time.Millisecond))
 }
 
 func TestAt(t *testing.T) {
@@ -24,5 +25,6 @@ func TestAt(t *testing.T) {
 	}
 	ch := At(time.Now().Add(2*time.Second), job)
 	assert.Equal(t, "hello", <-ch)
-	assert.InDelta(t, int(2*time.Second), int(time.Now().Sub(startTime)), float64(100*time.Millisecond))
+	dur := int(time.Now().Sub(startTime))
+	assert.InDelta(t, int(2*time.Second), dur, float64(100*time.Millisecond))
 }
