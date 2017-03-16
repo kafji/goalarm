@@ -9,17 +9,17 @@ import (
 type Job func(context.Context) (interface{}, error)
 
 func In(ctx context.Context, d time.Duration, job Job) chan interface{} {
-	ch := make(chan interface{})
+	outbound := make(chan interface{}, 1)
 	go func() {
-		defer close(ch)
+		defer close(outbound)
 		time.Sleep(d)
 		if r, err := job(ctx); err != nil {
-			ch <- err
+			outbound <- err
 		} else {
-			ch <- r
+			outbound <- r
 		}
 	}()
-	return ch
+	return outbound
 }
 
 func At(ctx context.Context, t time.Time, job Job) chan interface{} {
@@ -27,32 +27,28 @@ func At(ctx context.Context, t time.Time, job Job) chan interface{} {
 	return In(ctx, d, job)
 }
 
-func Every(ctx context.Context, delay time.Duration, job Job) chan interface{} {
+func Every(ctx context.Context, d time.Duration, job Job) chan interface{} {
 	var wg sync.WaitGroup
-	ch := make(chan interface{})
-	executionCh := make(chan interface{})
-	var run func()
-	run = func() {
+	inbound := make(chan interface{})
+	outbound := make(chan interface{}, 1)
+	execute := func() {
 		defer wg.Done()
-		resultCh := In(ctx, delay, job)
-		executionCh <- <-resultCh
+		wg.Add(1)
+		inbound <- <-In(ctx, d, job)
 	}
 	go func() {
 		for {
 			select {
-			case result := <-executionCh:
-				ch <- result
-				wg.Add(1)
-				go run()
 			case <-ctx.Done():
-				ch <- ctx.Err()
+				outbound <- ctx.Err()
 				wg.Wait()
-				close(ch)
-				close(executionCh)
+				close(outbound)
+			case result := <-inbound:
+				outbound <- result
+				go execute()
 			}
 		}
 	}()
-	wg.Add(1)
-	go run()
-	return ch
+	go execute()
+	return outbound
 }

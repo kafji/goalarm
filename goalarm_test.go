@@ -3,7 +3,6 @@ package goalarm
 import (
 	"context"
 	"errors"
-	"log"
 	"testing"
 	"time"
 
@@ -18,7 +17,7 @@ func TestIn(t *testing.T) {
 	ctx := context.Background()
 	ch := In(ctx, 1*time.Second, job)
 	assert.Equal(t, "hello", <-ch)
-	dur := int(time.Now().Sub(startTime))
+	dur := int(time.Since(startTime))
 	assert.InDelta(t, int(1*time.Second), dur, float64(100*time.Millisecond))
 }
 
@@ -30,7 +29,7 @@ func TestAt(t *testing.T) {
 	ctx := context.Background()
 	ch := At(ctx, time.Now().Add(1*time.Second), job)
 	assert.Equal(t, "hello", <-ch)
-	dur := int(time.Now().Sub(startTime))
+	dur := int(time.Since(startTime))
 	assert.InDelta(t, int(1*time.Second), dur, float64(100*time.Millisecond))
 }
 
@@ -42,7 +41,7 @@ func TestEvery(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	ch := Every(ctx, 1*time.Second, job)
 	go func() {
-		time.Sleep(4 * time.Second)
+		time.Sleep(3 * time.Second)
 		cancel()
 	}()
 	count := 0
@@ -50,25 +49,25 @@ Loop:
 	for {
 		select {
 		case in := <-ch:
-			if s, ok2 := in.(string); ok2 {
-				log.Println(s)
-				assert.Equal(t, "hello", s)
+			switch in.(type) {
+			case string:
+				assert.Equal(t, "hello", in)
 				count++
-			} else if e, ok2 := in.(error); ok2 {
-				if assert.Equal(t, context.Canceled, e) {
+			case error:
+				if assert.Equal(t, context.Canceled, in) {
 					break Loop
 				} else {
-					panic(e)
+					panic(in)
 				}
-			} else {
+			default:
 				panic(in)
 			}
 		}
 	}
-	assert.Equal(t, 3, count)
+	assert.Equal(t, 2, count)
 }
 
-func TestEveryErrorShouldStopExecution(t *testing.T) {
+func TestEvery_ErrorShouldStopExecution(t *testing.T) {
 	err := errors.New("error")
 	job := func(ctx context.Context) (interface{}, error) {
 		return "", err
@@ -85,17 +84,17 @@ Loop:
 	for {
 		select {
 		case in := <-ch:
-			if s, ok2 := in.(string); ok2 {
-				log.Println(s)
-				assert.Equal(t, "hello", s)
+			switch in.(type) {
+			case string:
+				assert.Equal(t, "hello", in)
 				count++
-			} else if e, ok2 := in.(error); ok2 {
-				if assert.Equal(t, err, e) {
+			case error:
+				if assert.Equal(t, err, in) {
 					break Loop
 				} else {
-					panic(e)
+					panic(in)
 				}
-			} else {
+			default:
 				panic(in)
 			}
 		}
