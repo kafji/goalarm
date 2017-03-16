@@ -13,3 +13,11 @@ In(10*time.Second, func(ch chan interface{}) {
 	fmt.Println("hello")
 })
 ```
+
+
+## Development
+
+### Run test
+```
+go test $(go list ./... | grep -v /vendor/)
+```
