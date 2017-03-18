@@ -43,6 +43,7 @@ func Every(ctx context.Context, d time.Duration, job Job) chan interface{} {
 				outbound <- ctx.Err()
 				wg.Wait()
 				close(outbound)
+				return
 			case result := <-inbound:
 				outbound <- result
 				go execute()
