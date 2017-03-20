@@ -27,29 +27,56 @@ func At(ctx context.Context, t time.Time, job Job) chan interface{} {
 	return In(ctx, d, job)
 }
 
-func Every(ctx context.Context, d time.Duration, job Job) chan interface{} {
+func Every(ctx context.Context, delay, firstDelay time.Duration, job Job) chan interface{} {
 	var wg sync.WaitGroup
-	inbound := make(chan interface{})
+
 	outbound := make(chan interface{}, 1)
-	execute := func() {
-		defer wg.Done()
-		wg.Add(1)
-		inbound <- <-In(ctx, d, job)
-	}
+
+	executeCh := make(chan interface{})
+	scheduleCh := make(chan interface{})
+
+	// scheduler
 	go func() {
 		for {
 			select {
+			case <-scheduleCh:
+				time.Sleep(delay)
+				executeCh <- nil
+			}
+		}
+	}()
+
+	execute := func() {
+		wg.Add(1)
+		if r, err := job(ctx); err != nil {
+			outbound <- err
+		} else {
+			outbound <- r
+		}
+		wg.Done()
+	}
+
+	// executor
+	go func() {
+		for {
+			select {
+			case <-executeCh:
+				execute()
+				scheduleCh <- nil
 			case <-ctx.Done():
 				outbound <- ctx.Err()
 				wg.Wait()
 				close(outbound)
 				return
-			case result := <-inbound:
-				outbound <- result
-				go execute()
 			}
 		}
 	}()
-	go execute()
+
+	// start
+	go func() {
+		time.Sleep(firstDelay)
+		executeCh <- nil
+	}()
+
 	return outbound
 }

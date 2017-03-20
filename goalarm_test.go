@@ -34,17 +34,20 @@ func TestAt(t *testing.T) {
 }
 
 func TestEvery(t *testing.T) {
+	startTime := time.Now()
 	job := func(ctx context.Context) (interface{}, error) {
+		time.Sleep(1 * time.Second)
 		return "hello", nil
 	}
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	ch := Every(ctx, 1*time.Second, job)
+	ch := Every(ctx, 2*time.Second, 0, job)
+	count := 0
 	go func() {
-		time.Sleep(3 * time.Second)
+		for count < 3 {
+		}
 		cancel()
 	}()
-	count := 0
 Loop:
 	for {
 		select {
@@ -64,7 +67,82 @@ Loop:
 			}
 		}
 	}
-	assert.Equal(t, 2, count)
+	assert.Equal(t, 3, count)
+	dur := int(time.Since(startTime))
+	assert.InDelta(t, int(7*time.Second), dur, float64(100*time.Millisecond))
+}
+
+func TestEvery_ExecuteFirstJobWhenCalled(t *testing.T) {
+	job := func(ctx context.Context) (interface{}, error) {
+		return "hello", nil
+	}
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	ch := Every(ctx, 1*time.Second, 0, job)
+	count := 0
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+	}()
+Loop:
+	for {
+		select {
+		case in := <-ch:
+			switch in.(type) {
+			case string:
+				assert.Equal(t, "hello", in)
+				count++
+			case error:
+				if assert.Equal(t, context.Canceled, in) {
+					break Loop
+				} else {
+					panic(in)
+				}
+			default:
+				panic(in)
+			}
+		}
+	}
+	assert.Equal(t, 1, count)
+}
+
+func TestEvery_WithFirstDelay(t *testing.T) {
+	startTime := time.Now()
+	job := func(ctx context.Context) (interface{}, error) {
+		time.Sleep(1 * time.Second)
+		return "hello", nil
+	}
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	ch := Every(ctx, 2*time.Second, 2*time.Second, job)
+	count := 0
+	go func() {
+		for count < 3 {
+		}
+		cancel()
+	}()
+Loop:
+	for {
+		select {
+		case in := <-ch:
+			switch in.(type) {
+			case string:
+				assert.Equal(t, "hello", in)
+				count++
+			case error:
+				if assert.Equal(t, context.Canceled, in) {
+					break Loop
+				} else {
+					panic(in)
+				}
+			default:
+				panic(in)
+			}
+		}
+	}
+	assert.Equal(t, 3, count)
+	dur := int(time.Since(startTime))
+	assert.InDelta(t, int(9*time.Second), dur, float64(100*time.Millisecond))
 }
 
 func TestEvery_ErrorShouldStopExecution(t *testing.T) {
@@ -74,7 +152,7 @@ func TestEvery_ErrorShouldStopExecution(t *testing.T) {
 	}
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	ch := Every(ctx, 1*time.Second, job)
+	ch := Every(ctx, 1*time.Second, 0, job)
 	go func() {
 		time.Sleep(4 * time.Second)
 		cancel()
