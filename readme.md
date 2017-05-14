@@ -5,7 +5,7 @@
 Run _job_ periodically or at specific time.
 Job is a function that accept `context.Context` and return `interface{}` and `error`.
 Job will be executed in different goroutine than the caller.
-Cancel periodically executed job using cancel function returned from `context.WithCancel(context.Background())`. For more advance use case take a look at its [tests](https://github.com/kafji/goalarm/blob/master/goalarm_test.go).
+Cancel periodically executed job using cancel function returned from `context.WithCancel(context.Background())`. For more use case take a look at its [tests](https://github.com/kafji/goalarm/blob/master/goalarm_test.go).
 
 ## Installation
 ```
