@@ -12,13 +12,13 @@ go get -u github.com/kafji/goalarm
 ctx := context.Background()
 
 // Print "hello" in 10 seconds.
-In(ctx, 10*time.Second, func(context.Context) (interface{}, error)) {
+In(ctx, 10*time.Second, func(context.Context) (interface{}, error) {
 	fmt.Println("hello")
 	return nil, nil
 })
 
 // Print "hello" every 10 seconds.
-Every(ctx, 10*time.Second, 0, func(context.Context) (interface{}, error)) {
+Every(ctx, 10*time.Second, 0, func(context.Context) (interface{}, error) {
 	fmt.Println("hello")
 	return nil, nil
 })
