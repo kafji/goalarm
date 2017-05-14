@@ -1,0 +1,9 @@
+language: go
+
+install:
+  - go get -u github.com/stretchr/testify
+
+notifications:
+  email: false
+
+sudo: false
