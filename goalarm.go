@@ -6,8 +6,12 @@ import (
 	"time"
 )
 
-type Job func(context.Context) (interface{}, error)
+// Job is function that will get executed.
+// Return error to stop execution.
+// Result will be propragate to channel returned by scheduler functions if err is nil.
+type Job func(ctx context.Context) (result interface{}, err error)
 
+// In is a scheduler function that will execute job after specified duration has passed.
 func In(ctx context.Context, d time.Duration, job Job) chan interface{} {
 	outbound := make(chan interface{}, 1)
 	go func() {
@@ -22,11 +26,13 @@ func In(ctx context.Context, d time.Duration, job Job) chan interface{} {
 	return outbound
 }
 
+// At is a scheduler function that will execute job at specified time.
 func At(ctx context.Context, t time.Time, job Job) chan interface{} {
 	d := t.Sub(time.Now())
 	return In(ctx, d, job)
 }
 
+// Every is a scheduler function that will execute job periodically after specified delay has passed.
 func Every(ctx context.Context, delay, firstDelay time.Duration, job Job) chan interface{} {
 	var wg sync.WaitGroup
 
