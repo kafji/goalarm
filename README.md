@@ -1,6 +1,7 @@
 # goalarm
 
 [![Build Status](https://travis-ci.org/kafji/goalarm.svg?branch=master)](https://travis-ci.org/kafji/goalarm)
+[![codecov](https://codecov.io/gh/kafji/goalarm/branch/master/graph/badge.svg)](https://codecov.io/gh/kafji/goalarm)
 
 Run _job_ periodically or at specific time.
 Job is a function that accept `context.Context` and return `interface{}` and `error`.
