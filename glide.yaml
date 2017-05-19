@@ -1,4 +1,0 @@
-package: github.com/kafji/goalarm
-import:
-- package: github.com/stretchr/testify
-  version: master
