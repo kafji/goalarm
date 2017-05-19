@@ -22,6 +22,15 @@ func TestIn(t *testing.T) {
 	assert.InDelta(t, int(1*time.Second), dur, float64(100*time.Millisecond))
 }
 
+func TestIn_ShouldSendErrorWhenJobReturnError(t *testing.T) {
+	job := func(ctx context.Context) (interface{}, error) {
+		return nil, errors.New("error")
+	}
+	ctx := context.Background()
+	ch := In(ctx, 1*time.Second, job)
+	assert.Equal(t, errors.New("error"), <-ch)
+}
+
 func TestAt(t *testing.T) {
 	startTime := time.Now()
 	job := func(ctx context.Context) (interface{}, error) {
@@ -32,6 +41,15 @@ func TestAt(t *testing.T) {
 	assert.Equal(t, "hello", <-ch)
 	dur := int(time.Since(startTime))
 	assert.InDelta(t, int(1*time.Second), dur, float64(100*time.Millisecond))
+}
+
+func TestAt_ShouldSendErrorWhenJobReturnError(t *testing.T) {
+	job := func(ctx context.Context) (interface{}, error) {
+		return nil, errors.New("error")
+	}
+	ctx := context.Background()
+	ch := At(ctx, time.Now().Add(1*time.Second), job)
+	assert.Equal(t, errors.New("error"), <-ch)
 }
 
 func TestEvery(t *testing.T) {
